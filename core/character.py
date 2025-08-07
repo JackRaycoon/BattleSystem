@@ -6,12 +6,17 @@ class AttackType(Enum):
     D6x2 = auto()
 
 class Character:
-    def __init__(self, name, hp, armor, attack_type):
+    def __init__(self, name, hp, armor, attack_type, speed):
         self.name = name
         self.max_hp = hp
         self.current_hp = hp
         self.armor = armor
         self.attack_type = attack_type
+        self.speed = speed
+        self.battle_speed = 0
+
+    def is_dead(self):
+        return self.current_hp == 0
 
     def hp_percent(self):
         return round((self.current_hp / self.max_hp) * 100, 2)
@@ -35,8 +40,8 @@ class Character:
 
 class Player(Character):
     def __init__(self):
-        super().__init__("Григорий", 50, 8, AttackType.D4x2)
+        super().__init__("Григорий", 50, 8, AttackType.D4x2, 5)
 
 class Enemy(Character):
     def __init__(self):
-        super().__init__("Химера", 30, 7, AttackType.D4)
+        super().__init__("Химера", 30, 7, AttackType.D4, 6)
