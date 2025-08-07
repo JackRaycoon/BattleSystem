@@ -40,18 +40,17 @@ class BattleUI:
         enemy_frame = ttk.Frame(self.root, padding=10)
         enemy_frame.grid(row=0, column=2, sticky="nsew")
 
-        self.fill_character_frame(player_frame, self.battle_core.player.name,
-                                  self.battle_core.player.hp_percent(), self.battle_core.player.armor)
-        self.fill_character_frame(enemy_frame, self.battle_core.enemy.name,
-                                  self.battle_core.enemy.hp_percent(),self.battle_core.enemy.armor,
-                                  False)
+        player = self.battle_core.player
+        enemy = self.battle_core.enemy
+        self.fill_character_frame(player_frame, player)
+        self.fill_character_frame(enemy_frame, enemy,False)
 
         self.root.columnconfigure(0, weight=1)
         self.root.columnconfigure(1, weight=0)
         self.root.columnconfigure(2, weight=1)
         self.root.rowconfigure(0, weight=1)
 
-    def fill_character_frame(self, frame, name, hp_percent, armor, is_player = True):
+    def fill_character_frame(self, frame, character, is_player = True):
         if is_player and self.player_photo:
             img_label = ttk.Label(frame, image=self.player_photo)
         elif not is_player and self.enemy_photo:
@@ -68,7 +67,7 @@ class BattleUI:
 
         name_label = ttk.Label(
             frame,
-            text=name,
+            text=character.name,
             font=('Arial', 12, 'bold'))
         name_label.pack()
 
@@ -80,33 +79,45 @@ class BattleUI:
             orient="horizontal",
             length=200,
             mode="determinate",
-            value=hp_percent)
+            value=character.hp_percent())
         hp_bar.pack()
 
         if is_player:
             self.player_hp_bar = hp_bar
-            self.player_hp_label = ttk.Label(frame, text=f"{hp_percent}%")
+            self.player_hp_label = ttk.Label(frame,
+                                             text=f"{character.current_hp}/{character.max_hp}"
+                                                  f"({character.hp_percent()}%)")
         else:
             self.enemy_hp_bar = hp_bar
-            self.enemy_hp_label = ttk.Label(frame, text=f"{hp_percent}%")
+            self.enemy_hp_label = ttk.Label(frame,
+                                            text=f"{character.current_hp}/{character.max_hp}"
+                                                 f"({character.hp_percent()}%)")
 
         hp_label = self.player_hp_label if is_player else self.enemy_hp_label
         hp_label.pack()
 
+        attack_type_label = ttk.Label(
+            frame,
+            text=f"Атака: {character.attack_type_text()}",
+            font=('Arial', 10))
+        attack_type_label.pack(pady=(10, 0))
+
         armor_label = ttk.Label(
             frame,
-            text=f"Броня: {armor}",
+            text=f"Броня: {character.armor}",
             font=('Arial', 10))
-        armor_label.pack(pady=(10, 0))
+        armor_label.pack(pady=(5, 0))
 
     def update_health_bars(self):
-        player_hp = self.battle_core.player.hp_percent()
+        player = self.battle_core.player
+        player_hp = player.hp_percent()
         self.player_hp_bar['value'] = player_hp
-        self.player_hp_label['text'] = f"{player_hp}%"
+        self.player_hp_label['text'] = f"{player.current_hp}/{player.max_hp} ({player_hp}%)"
 
-        enemy_hp = self.battle_core.enemy.hp_percent()
+        enemy = self.battle_core.enemy
+        enemy_hp = enemy.hp_percent()
         self.enemy_hp_bar['value'] = enemy_hp
-        self.enemy_hp_label['text'] = f"{enemy_hp}%"
+        self.enemy_hp_label['text'] = f"{enemy.current_hp}/{enemy.max_hp} ({enemy_hp}%)"
 
         self.root.update_idletasks()
 
