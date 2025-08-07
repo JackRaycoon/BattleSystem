@@ -6,12 +6,12 @@ class DiceSystem:
 
     def d6(self, in_log = True):
         roll = random.randint(1, 6)
-        if (in_log):
+        if in_log:
             self.battle_ui.add_log_message(f"[D6]: {roll}")
         return roll
     def d4(self, in_log = True):
         roll = random.randint(1, 4)
-        if(in_log):
+        if in_log:
             self.battle_ui.add_log_message(f"[D4]: {roll}")
         return roll
     def d4x2(self):

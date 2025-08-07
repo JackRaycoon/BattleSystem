@@ -18,9 +18,6 @@ class BattleUI:
         self.enemy_photo = None
         self.load_images()
 
-        print(f"Player photo: {self.player_photo}")
-        print(f"Enemy photo: {self.enemy_photo}")
-
         self.player_hp_bar = None
         self.enemy_hp_bar = None
         self.player_hp_label = None
@@ -150,7 +147,7 @@ class BattleUI:
             button_frame,
             text="Атаковать",
             width=20,
-            command=self.battle_core.hit)
+            command=lambda: self.battle_core.hit(True))
         attack_button.pack()
 
     def add_log_message(self, message):
