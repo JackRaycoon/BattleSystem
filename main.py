@@ -9,9 +9,12 @@ def main():
     dice_system = DiceSystem()
     battle_core = BattleCore(dice_system)
     app = BattleUI(root, battle_core)
+
     dice_system.battle_ui = app
+
     battle_core.battle_ui = app
     battle_core.prepare_to_fight(battle_core.player)
+
     root.mainloop()
 
 if __name__ == "__main__":

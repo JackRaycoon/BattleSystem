@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
+import asyncio
+import threading
 
 
 class BattleUI:
@@ -28,7 +30,66 @@ class BattleUI:
         self.log_text = None
         self.create_log_frame()
 
+        self.attack_button = None
         self.create_attack_button()
+
+        self.running = True
+        self.loop = asyncio.new_event_loop()
+        asyncio_thread = threading.Thread(target=self.run_async, daemon=True)
+        asyncio_thread.start()
+
+        self.message_queue = asyncio.Queue()
+        self._queue_not_empty = asyncio.Event()
+        self.log_task = None
+        self.start_log_processor()
+
+        self.add_log_message_sync("Бой начался!")
+
+    async def process_log_messages(self):
+        while True:
+            message = await self.message_queue.get()
+            self._queue_not_empty.set()
+            self.log_text.configure(state="normal")
+            self.log_text.insert("end", message + "\n")
+            self.log_text.configure(state="disabled")
+            self.log_text.see("end")
+            await asyncio.sleep(0.5)
+            if self.message_queue.empty():
+                self._queue_not_empty.clear()
+                self._update_attack_button_state()
+
+    def _update_attack_button_state(self):
+        def update():
+            should_disable = self._queue_not_empty.is_set() or self.battle_core.end_game
+            state = tk.NORMAL if not should_disable else tk.DISABLED
+            self.attack_button.config(state=state)
+
+        self.root.after(0, update)
+
+    def start_log_processor(self):
+        self.log_task = asyncio.run_coroutine_threadsafe(
+            self.process_log_messages(),
+            self.loop
+        )
+
+    async def add_log_message(self, message):
+        self.attack_button.config(state=tk.DISABLED)
+        await self.message_queue.put(message)
+
+    def add_log_message_sync(self, message):
+        asyncio.run_coroutine_threadsafe(
+            self.add_log_message(message),
+            self.loop
+        )
+
+    async def is_queue_empty(self):
+        await asyncio.sleep(0.1)
+        return self.message_queue.empty()
+
+    def run_async(self):
+        asyncio.set_event_loop(self.loop)
+        while self.running:
+            self.loop.run_until_complete(asyncio.sleep(0.1))
 
     def create_player_frames(self):
         player_frame = ttk.Frame(self.root, padding=10)
@@ -137,24 +198,20 @@ class BattleUI:
         self.log_text.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        self.add_log_message("Бой начался!")
-
     def create_attack_button(self):
         button_frame = ttk.Frame(self.root)
         button_frame.grid(row=1, column=0, columnspan=3, pady=10)
 
-        attack_button = ttk.Button(
+        self.attack_button = ttk.Button(
             button_frame,
             text="Атаковать",
             width=20,
-            command=lambda: self.battle_core.hit(True))
-        attack_button.pack()
-
-    def add_log_message(self, message):
-        self.log_text.configure(state="normal")
-        self.log_text.insert("end", message + "\n")
-        self.log_text.configure(state="disabled")
-        self.log_text.see("end")
+            command=lambda: asyncio.run_coroutine_threadsafe(
+            self.battle_core.hit(True),
+            self.loop
+        )
+        )
+        self.attack_button.pack()
 
     def load_images(self):
         from pathlib import Path
@@ -178,3 +235,6 @@ class BattleUI:
             print(f"Ошибка загрузки изображений: {e}")
             self.player_photo = None
             self.enemy_photo = None
+
+    def __del__(self):
+        self.running = False
